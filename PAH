@@ -1,4 +1,3 @@
-make it so the powershell script command text wont be shown when u enter in the script only the output text like ascii banner and text and etc
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
