@@ -1,0 +1,102 @@
+make it so the powershell script command text wont be shown when u enter in the script only the output text like ascii banner and text and etc
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+
+function Write-ColoredMessage {
+    param (
+        [string]$message,
+        [ConsoleColor]$color = "White",
+        [switch]$NoNewLine
+    )
+    $originalColor = $Host.UI.RawUI.ForegroundColor
+    $Host.UI.RawUI.ForegroundColor = $color
+    if ($NoNewLine) {
+        Write-Host -NoNewline $message
+    } else {
+        Write-Host $message
+    }
+    $Host.UI.RawUI.ForegroundColor = $originalColor
+}
+
+function Show-AsciiBanner {
+    $banner = @"
+ ___      ___ ________  ___       ___  __    ________          ________  ________  ___  ___     
+|\  \    /  /|\   __  \|\  \     |\  \|\  \ |\_____  \        |\   __  \|\   __  \|\  \|\  \    
+\ \  \  /  / | \  \|\  \ \  \    \ \  \/  /|_\|___/  /|       \ \  \|\  \ \  \|\  \ \  \\\  \   
+ \ \  \/  / / \ \   __  \ \  \    \ \   ___  \   /  / /        \ \   ____\ \   __  \ \   __  \  
+  \ \    / /   \ \  \ \  \ \  \____\ \  \\ \  \ /  /_/__        \ \  \___|\ \  \ \  \ \  \ \  \ 
+   \ \__/ /     \ \__\ \__\ \_______\ \__\\ \__\\________\       \ \__\    \ \__\ \__\ \__\ \__\
+    \|__|/       \|__|\|__|\|_______|\|__| \|__|\|_______|        \|__|     \|__|\|__|\|__|\|__|
+                                                                                                
+                                                                                                
+"@
+
+    $banner -split "`n" | ForEach-Object {
+        Write-ColoredMessage $_ -color Red
+    }
+
+    Write-Host
+    Write-ColoredMessage "Made by @Justvalkz - " -color Blue -NoNewLine
+    Write-ColoredMessage "process activity history | I spent way to much time on this bs" -color Red
+    Write-Host
+    Write-Host
+}
+
+# Show the banner only once
+Show-AsciiBanner
+
+function Show-ProcessActiveHistory {
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = "Process Active History"
+    $form.WindowState = 'Maximized'
+    $form.MinimumSize = New-Object System.Drawing.Size(800, 600)
+    $form.StartPosition = "CenterScreen"
+    $form.BackColor = [System.Drawing.Color]::White
+    $form.Topmost = $true
+    $form.FormBorderStyle = 'Sizable'
+    $listBox = New-Object System.Windows.Forms.ListBox
+    $listBox.Dock = 'Fill'
+    $listBox.Font = New-Object System.Drawing.Font("Consolas", 10)
+    $listBox.BackColor = [System.Drawing.Color]::White
+    $listBox.ForeColor = [System.Drawing.Color]::Black
+    $form.Controls.Add($listBox)
+    $seenProcesses = [System.Collections.Generic.HashSet[string]]::new()
+    $timer = New-Object System.Windows.Forms.Timer
+    $timer.Interval = 2000
+    $timer.Add_Tick({
+        try {
+            $processes = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -or $_.ProcessName }
+            foreach ($proc in $processes) {
+                $appName = $proc.ProcessName
+                if (-not $seenProcesses.Contains($appName)) {
+                    $seenProcesses.Add($appName) | Out-Null
+                    $timeStamp = Get-Date -Format "HH:mm:ss"
+                    $displayText = "[$timeStamp] Opened: $appName"
+                    $listBox.Invoke([action]{ $listBox.Items.Add($displayText) }) | Out-Null
+                }
+            }
+        } catch {
+        }
+    })
+    $timer.Start()
+    $form.Add_Shown({ $form.Activate() })
+    $form.Add_Closing({ 
+        $timer.Stop()
+        $timer.Dispose()
+    })
+    [void] $form.ShowDialog()
+}
+
+# Record start time
+$startTime = Get-Date
+
+# Show the banner only once, no repeats
+# (Already called above)
+
+# Run the process activity window
+Show-ProcessActiveHistory
+
+# Output end time and duration
+Write-Host ""
+Write-Host ("Script ended at   : {0}" -f (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")) -ForegroundColor Gray
+Write-Host ("Total duration    : {0}" -f ((Get-Date) - $startTime).ToString()) -ForegroundColor Gray
