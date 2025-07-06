@@ -1,0 +1,52 @@
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+
+function Show-ProcessActiveHistory {
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = "Process Active History"
+    $form.WindowState = 'Maximized'
+    $form.MinimumSize = New-Object System.Drawing.Size(800, 600)
+    $form.StartPosition = "CenterScreen"
+    $form.BackColor = [System.Drawing.Color]::White
+    $form.Topmost = $true
+    $form.FormBorderStyle = 'Sizable'
+
+    $listBox = New-Object System.Windows.Forms.ListBox
+    $listBox.Dock = 'Fill'
+    $listBox.Font = New-Object System.Drawing.Font("Consolas", 10)
+    $listBox.BackColor = [System.Drawing.Color]::White
+    $listBox.ForeColor = [System.Drawing.Color]::Black
+    $form.Controls.Add($listBox)
+
+    $seenProcesses = [System.Collections.Generic.HashSet[string]]::new()
+    $timer = New-Object System.Windows.Forms.Timer
+    $timer.Interval = 2000
+    $timer.Add_Tick({
+        try {
+            $processes = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -or $_.ProcessName }
+            foreach ($proc in $processes) {
+                $appName = $proc.ProcessName
+                if (-not $seenProcesses.Contains($appName)) {
+                    $seenProcesses.Add($appName) | Out-Null
+                    $timeStamp = Get-Date -Format "HH:mm:ss"
+                    $displayText = "[$timeStamp] Opened: $appName"
+                    $listBox.Invoke([action]{ $listBox.Items.Add($displayText) }) | Out-Null
+                }
+            }
+        } catch {
+            # ignore errors silently
+        }
+    })
+    $timer.Start()
+
+    $form.Add_Shown({ $form.Activate() })
+    $form.Add_Closing({ 
+        $timer.Stop()
+        $timer.Dispose()
+    })
+
+    [void] $form.ShowDialog()
+}
+
+# Start GUI process monitoring
+Show-ProcessActiveHistory
