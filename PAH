@@ -41,7 +41,7 @@ function Show-AsciiBanner {
     Write-Host
 }
 
-# Show the banner only once
+
 Show-AsciiBanner
 
 function Show-ProcessActiveHistory {
@@ -86,16 +86,16 @@ function Show-ProcessActiveHistory {
     [void] $form.ShowDialog()
 }
 
-# Record start time
+# start time recording
 $startTime = Get-Date
 
-# Show the banner only once, no repeats
+# fixes the banner showing twice 
 # (Already called above)
 
-# Run the process activity window
+# run PAH
 Show-ProcessActiveHistory
 
-# Output end time and duration
+# outputs and durations 
 Write-Host ""
 Write-Host ("Script ended at   : {0}" -f (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")) -ForegroundColor Gray
 Write-Host ("Total duration    : {0}" -f ((Get-Date) - $startTime).ToString()) -ForegroundColor Gray
